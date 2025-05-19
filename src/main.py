@@ -14,14 +14,15 @@ from Autonomous import *
 
 # vex device config
 brain = Brain()
-left_1 = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
-left_2 = Motor(Ports.PORT2, GearSetting.RATIO_18_1, False)
-left_3 = Motor(Ports.PORT3, GearSetting.RATIO_18_1, False)
+left_1 = Motor(Ports.PORT20, GearSetting.RATIO_18_1, False)
+left_2 = Motor(Ports.PORT19, GearSetting.RATIO_18_1, False)
+left_3 = Motor(Ports.PORT18, GearSetting.RATIO_18_1, False)
 left = MotorGroup(left_1, left_2, left_3)
-right_1 = Motor(Ports.PORT4, GearSetting.RATIO_18_1, False)
-right_2 = Motor(Ports.PORT5, GearSetting.RATIO_18_1, False)
-right_3 = Motor(Ports.PORT6, GearSetting.RATIO_18_1, False)
+right_1 = Motor(Ports.PORT10, GearSetting.RATIO_18_1, False)
+right_2 = Motor(Ports.PORT9, GearSetting.RATIO_18_1, False)
+right_3 = Motor(Ports.PORT8, GearSetting.RATIO_18_1, False)
 right = MotorGroup(right_1, right_2, right_3)
+gyro = Inertial(Ports.PORT17)
 controller_1 = Controller()
 
 # create competition instance
