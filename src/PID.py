@@ -105,7 +105,7 @@ class PID:
         totalError = 0
         i = 0
 
-        while abs(desiredValue - self.yourSensor) > tollerance == False:
+        while abs(desiredValue - self.yourSensor) > tollerance:
             i += 1
             error = desiredValue - self.yourSensor
             derivative = error - previousError
@@ -153,20 +153,16 @@ class turnPID(PID):
             wait(50)
 
     def tune(self, desiredValue: int, tollerance: float, sd_file_name = "pidData.csv"):
+        data_buffer: str = ""
         csvHeaderText = "time, error, derivative, totalError, output, desiredValue"
 
         data_buffer = csvHeaderText + "\n"
-
-        errorGraph = []
-        derivativeGraph = []
-        totalErrorGraph = []
-        tGraph = []
 
         previousError = 0
         totalError = 0
         i = 0
 
-        while abs(desiredValue - self.yourSensor) > tollerance == False:
+        while abs(desiredValue - self.yourSensor) > tollerance:
             i += 1
             error = desiredValue - self.yourSensor
             derivative = error - previousError
@@ -176,18 +172,13 @@ class turnPID(PID):
             totalError += error
             wait(50)
 
-            tGraph.append(i * 50)
-            data_buffer += "%1.3f" % i * 50 + ","
-            data_buffer += "%1.3f" % error + ","
-            data_buffer += "%1.3f" % derivative + ","
-            data_buffer += "%1.3f" % totalError + ","
-            data_buffer += "%1.3f" % self.output + ","
-            data_buffer += "%1.3f" % desiredValue + "\n"
+            data_buffer += "%1.3f" %(i * 50) + ","
+            data_buffer += "%1.3f" %(error) + ","
+            data_buffer += "%1.3f" %(derivative) + ","
+            data_buffer += "%1.3f" %(totalError) + ","
+            data_buffer += "%1.3f" %(self.output) + ","
+            data_buffer += "%1.3f" %(desiredValue) + "\n"
 
-            errorGraph.append(error)
-
-            derivativeGraph.append(derivative)
-            totalErrorGraph.append(totalError)
         self.brain.sdcard.savefile(sd_file_name, bytearray(data_buffer, 'utf-8'))
         
 
