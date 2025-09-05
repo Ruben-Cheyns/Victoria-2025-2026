@@ -10,21 +10,19 @@
 # Library imports
 from vex import *
 
-
 # vex device config
 brain = Brain()
-left_1 = Motor(Ports.PORT20, GearSetting.RATIO_18_1, False)
-left_2 = Motor(Ports.PORT19, GearSetting.RATIO_18_1, False)
-left_3 = Motor(Ports.PORT18, GearSetting.RATIO_18_1, False)
+left_1 = Motor(Ports.PORT20, GearSetting.RATIO_6_1, False)
+left_2 = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
+left_3 = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False)
 left = MotorGroup(left_1, left_2, left_3)
-right_1 = Motor(Ports.PORT10, GearSetting.RATIO_18_1, True)
-right_2 = Motor(Ports.PORT9, GearSetting.RATIO_18_1, True)
-right_3 = Motor(Ports.PORT8, GearSetting.RATIO_18_1, True)
+right_1 = Motor(Ports.PORT10, GearSetting.RATIO_6_1, True)
+right_2 = Motor(Ports.PORT9, GearSetting.RATIO_6_1, True)
+right_3 = Motor(Ports.PORT8, GearSetting.RATIO_6_1, True)
 right = MotorGroup(right_1, right_2, right_3)
 intake = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
 gyro = Inertial(Ports.PORT17)
 controller_1 = Controller()
-
 
 # PID classes
 class PID:
@@ -147,12 +145,13 @@ rotateTune.KD = 0
 
 # autonomous 
 def auton():
-    # place automonous code here
+    """
+    place automonous code here
+    """
     for i in range(0, 360, 30):
         right.spin(FORWARD, 0)
         left.spin(FORWARD, 0)
-        #rotateTune.tune(i, 0.2, 'turnPID' + str(i) + '.csv') 
-        rotateTune.tune(i, 0.2, f'turnPID.csv{i}°') 
+        rotateTune.tune(i, 0.2, 'turnPID'+ str(i) + '.csv')
 
 # user control functions
 def arcadeDrive(left: MotorGroup, right: MotorGroup, controller: Controller):
@@ -184,6 +183,83 @@ def intakeControl():
     else:
         intake.stop(HOLD)
 
+# UI classes
+class button:
+    def __init__(self, height:int, width:int, posX:int, posY:int, color, text:str) -> None:
+        self.height = height
+        self.width = width
+        self.posX = posX
+        self.posY = posY
+        self.Pressed = False
+        self.color = color
+        self.text = text
+
+    def draw(self):
+        brain.screen.set_pen_color(self.color)
+        brain.screen.draw_rectangle(self.posX, self.posY, self.width, self.height, self.color)
+        brain.screen.set_pen_color(Color.BLACK)
+        brain.screen.print_at(self.text,x= self.posX + 10,y= self.posY + self.height//2 - 5,opaque= False)
+
+    def isPressed(self, touchX:int, touchY:int) -> bool:
+        if touchX > self.posX and touchX < self.posX + self.width and touchY > self.posY and touchY < self.posY + self.height:
+            self.Pressed = True
+        else:
+            self.Pressed = False
+        return self.Pressed
+    
+class autonSelector:
+    def __init__(self, autons:list,names:list,doc:list, background) -> None:
+        self.autons = autons
+        self.names = names
+        self.doc = doc
+        self.background = background
+        self.selected = None
+
+    def display(self):
+        buttons = []
+        brain.screen.draw_image_from_file(self.background, 0, 0)
+        for i in range(1,len(self.autons)+1):
+            buttons.append(button(50, 220, 10, 10 + (i-1)*60, Color.BLUE, str(self.names[i-1])))
+            buttons[i-1].draw()
+        brain.screen.render()
+
+        while True:
+            if brain.screen.pressing():
+                touchX = brain.screen.x_position()
+                touchY = brain.screen.y_position()
+                for i in range(len(buttons)):
+                    if buttons[i].isPressed(touchX, touchY):
+                        brain.screen.clear_screen()
+                        brain.screen.draw_image_from_file(self.background, 0, 0)
+                        brain.screen.render()
+                        confirm = button(60, 220, 10, 10, Color.GREEN, "Confirm")
+                        cancel = button(60, 220, 250, 10, Color.RED, "Cancel")
+                        confirm.draw()
+                        cancel.draw()
+                        brain.screen.print_at("test",x= 10,y= 80,opaque= False)
+                        wait(1,SECONDS)
+                        brain.screen.render()
+
+                        while True:
+                            if brain.screen.pressing():
+                                touchX = brain.screen.x_position()
+                                touchY = brain.screen.y_position()
+                                if confirm.isPressed(touchX, touchY):
+                                    self.selected = self.autons[i]
+                                    return self.selected
+                                elif cancel.isPressed(touchX, touchY):
+                                    brain.screen.clear_screen()
+                                    brain.screen.draw_image_from_file(self.background, 0, 0)
+                                    for j in range(len(buttons)):
+                                        buttons[j].draw()
+                                    brain.screen.render()
+                                    break
+                            wait(100)
+            wait(100)
+
+# UI setup
+selector = autonSelector([auton],["auton"],["placement enzo blablabla"], "background.png")
+
 # user control 
 def user_control():
     brain.screen.clear_screen()
@@ -193,8 +269,13 @@ def user_control():
         intakeControl()
         wait(20, MSEC)
 
+# call auton selector
+selector.display()
+
 # create competition instance
-comp = Competition(user_control, auton)
+comp = Competition(user_control, selector.selected)
 
 # actions to do when the program starts
 brain.screen.clear_screen()
+brain.screen.draw_image_from_file("background.png", 0, 0)
+brain.screen.render()
