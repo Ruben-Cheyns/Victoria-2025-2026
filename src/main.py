@@ -236,7 +236,7 @@ class autonSelector:
                         cancel = button(60, 220, 250, 10, Color.RED, "Cancel")
                         confirm.draw()
                         cancel.draw()
-                        brain.screen.print_at("test",x= 10,y= 80,opaque= False)
+                        brain.screen.print_at(self.doc[i],x= 10,y= 80,opaque= False)
                         wait(1,SECONDS)
                         brain.screen.render()
 
