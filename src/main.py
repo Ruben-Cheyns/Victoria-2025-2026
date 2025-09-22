@@ -21,7 +21,7 @@ right_2 = Motor(Ports.PORT9, GearSetting.RATIO_6_1, True)
 right_3 = Motor(Ports.PORT8, GearSetting.RATIO_6_1, True)
 right = MotorGroup(right_1, right_2, right_3)
 intake = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
-intakeSort = Motor(Ports.PORT2, False)
+intakeSort = Motor(Ports.PORT2, True)
 out = Motor(Ports.PORT11, False)
 gyro = Inertial(Ports.PORT17)
 controller_1 = Controller()
@@ -159,20 +159,31 @@ def auton():
 # user control functions
 k=2
 
-def changeDriveGraph():
+def changeDriveGraph(controller: Controller):
+    """
+    changes the constant in the DriveGraph on button press
+    """
     global k
-    if controller_1.buttonUp.pressed:
+    if controller.buttonUp.pressed:
         k+=1
-    elif controller_1.buttonDown.pressed:
+    elif controller.buttonDown.pressed:
         k-=1
-    controller_1.screen.print(k)
+    controller.screen.clear_screen()
+    controller.screen.print(k)
 
 def driveGraph(x):
-    return (x**k)/10**((k-1)*2)
+    """
+    a simple mathemathic function to translate controller input into velocity output
+    """
+    if x > 0:
+        return (x**k)/10**((k-1)*2)
+    else:
+        return -(x**k)/10**((k-1)*2)
 
-def arcadeDrive(left: MotorGroup, right: MotorGroup, controller: Controller):
+def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller):
     """
     Arcade drive using the left joystick for forward/backward movement and the right joystick for turning.
+    a graph translates forward controller input to forward speed
 
     motorgroups: Left, Right
     controller: controller_1
@@ -180,16 +191,10 @@ def arcadeDrive(left: MotorGroup, right: MotorGroup, controller: Controller):
     usecase:
         repeat in loop when driver control is active
     """
-    if controller.axis3.position() > 0:
-        left.set_velocity((driveGraph(controller.axis3.position()) + controller.axis1.position()), PERCENT)
-        right.set_velocity((driveGraph(controller.axis3.position()) - controller.axis1.position()), PERCENT)
-        left.spin(FORWARD)
-        right.spin(FORWARD)
-    else:
-        left.set_velocity((-driveGraph(controller.axis3.position()) + controller.axis1.position()), PERCENT)
-        right.set_velocity((-driveGraph(controller.axis3.position()) - controller.axis1.position()), PERCENT)
-        left.spin(FORWARD)
-        right.spin(FORWARD)
+    left.set_velocity((driveGraph(controller.axis3.position()) + controller.axis1.position()), PERCENT)
+    right.set_velocity((driveGraph(controller.axis3.position()) - controller.axis1.position()), PERCENT)
+    left.spin(FORWARD)
+    right.spin(FORWARD)
 
 def intakeControl():
     """
@@ -198,15 +203,18 @@ def intakeControl():
     usecase:
         repeat in loop when driver control is active
     """
-    if controller_1.buttonR1.pressing():
+    if controller_1.buttonL1.pressing():
+        intake.spin(FORWARD, 50, PERCENT)
+        intakeSort.spin(REVERSE, 100, PERCENT)
+    elif controller_1.buttonR1.pressing():
         intake.spin(FORWARD, 100, PERCENT)
         intakeSort.spin(FORWARD, 100, PERCENT)
     elif controller_1.buttonR2.pressing():  
         intake.spin(REVERSE, 100, PERCENT)
         intakeSort.spin(REVERSE, 100, PERCENT)
     else:
-        intake.stop(HOLD)
-        intakeSort.stop(HOLD)
+        intake.stop(BRAKE)
+        intakeSort.stop(BRAKE)
 
 # UI classes
 class button:
@@ -290,7 +298,7 @@ def user_control():
     brain.screen.clear_screen()
     brain.screen.print("user control code")
     while True:
-        arcadeDrive(left, right, controller_1)
+        arcadeDriveGraph(left, right, controller_1)
         intakeControl()
         wait(20, MSEC)
 
