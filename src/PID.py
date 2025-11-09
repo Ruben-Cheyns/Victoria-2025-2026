@@ -9,7 +9,7 @@
 
 # Library imports
 from vex import *
-
+from UI import button
 class PID:
     "a beautiful well made pid system for all vex uses"
 
@@ -27,8 +27,8 @@ class PID:
         while abs(desiredValue - self.yourSensor) > tollerance:
             i += 1
             error = desiredValue - self.yourSensor
-            derivative = error - previousError
-            self.output = error * self.KP + derivative * self.KD + totalError * self.KI
+            derivative = (error - previousError) / i*50
+            self.output = error * self.KP + derivative * self.KD + totalError / i*50 * self.KI
             totalError += error
             wait(50)
 
@@ -127,9 +127,10 @@ class PID:
             totalErrorGraph.append(totalError)
         self.brain.sdcard.savefile(sd_file_name, bytearray(data_buffer, 'utf-8'))
 
+
 class turnPID(PID):
     
-    def __init__(self, yourSensor, brain: Brain, leftMotorGroup: MotorGroup, rightMotorGroup: MotorGroup, KP: float = 1, KI: float = 0, KD: float = 0):
+    def __init__(self, yourSensor, brain: Brain, leftMotorGroup: MotorGroup, rightMotorGroup: MotorGroup, KP: float = 1, KI: float = 0, KD: float = 0, stopButton = False):
         self.KP = KP
         self.KI = KI
         self.KD = KD
@@ -137,48 +138,58 @@ class turnPID(PID):
         self.right = rightMotorGroup
         self.yourSensor = yourSensor
         self.brain = brain
+        self.output:float = 0
+        self.stopButton = stopButton
 
     def run (self, desiredValue: int, tollerance: float):
         previousError = 0
         totalError = 0
         i = 0
-        while abs(desiredValue - self.yourSensor) > tollerance:
+        while abs(desiredValue - self.yourSensor()) > tollerance:
             i += 1
-            error = desiredValue - self.yourSensor
+            error = desiredValue - self.yourSensor()
             derivative = error - previousError
+            totalError += error
             self.output = error * self.KP + derivative * self.KD + totalError * self.KI
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
-            totalError += error
             wait(50)
+            previousError = error
 
     def tune(self, desiredValue: int, tollerance: float, sd_file_name = "pidData.csv"):
-        data_buffer: str = ""
-        csvHeaderText = "time, error, derivative, totalError, output, desiredValue"
+        if self.stopButton:
+            stop = button(60, 220, 250, 10, Color.RED, "terminate")
+            stop.draw()
 
-        data_buffer = csvHeaderText + "\n"
+        csvHeaderText:str = "time, error, derivative, totalError, output, desiredValue"
+
+        data_buffer:str = csvHeaderText + "\n"
 
         previousError = 0
         totalError = 0
         i = 0
 
-        while abs(desiredValue - self.yourSensor) > tollerance:
+        while abs(desiredValue - self.yourSensor()) > tollerance:
             i += 1
-            error = desiredValue - self.yourSensor
+            error:float = desiredValue - self.yourSensor()
             derivative = error - previousError
+            totalError += error
             self.output = error * self.KP + derivative * self.KD + totalError * self.KI
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
-            totalError += error
             wait(50)
+            previousError = error
 
-            data_buffer += "%1.3f" %(i * 50) + ","
-            data_buffer += "%1.3f" %(error) + ","
-            data_buffer += "%1.3f" %(derivative) + ","
-            data_buffer += "%1.3f" %(totalError) + ","
-            data_buffer += "%1.3f" %(self.output) + ","
-            data_buffer += "%1.3f" %(desiredValue) + "\n"
+            data_buffer += str(i * 50) + ","
+            data_buffer += "%.3f" % error + ","
+            data_buffer += "%.3f" % derivative + ","
+            data_buffer += "%.3f" % totalError + ","
+            data_buffer += "%.3f" % self.output + ","
+            data_buffer += str(desiredValue) + "\n"
+
+            if self.stopButton and stop.isPressed(self.brain.screen.x_position(),self.brain.screen.y_position()):
+                break
 
         self.brain.sdcard.savefile(sd_file_name, bytearray(data_buffer, 'utf-8'))
-        
+
 
