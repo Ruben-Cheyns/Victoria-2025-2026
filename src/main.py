@@ -181,6 +181,7 @@ class turnPID(PID):
         if stopButton:
             stop = button(60, 220, 250, 10, Color.RED, "terminate")
             stop.draw()
+            brain.screen.render()
 
         csvHeaderText:str = "time, proportional, derivative, integral, output, desiredValue"
         data_buffer:str = csvHeaderText + "\n"
@@ -252,7 +253,7 @@ def tune():
 
 def Left():
     """temporary autonomous routine for scrimage 1
-    """
+    
     forward(800)
     right.spin(FORWARD, 0, PERCENT)
     left.spin(FORWARD, 0, PERCENT)
@@ -267,10 +268,11 @@ def Left():
     wait(2, SECONDS)
     outDown.stop(COAST)
     outUp.stop(COAST)
+    """
 
 def Right():
     """temporary autonomous routine for scrimage 1
-    """
+    
     forward(800)
     right.spin(FORWARD, 0, PERCENT)
     left.spin(FORWARD, 0, PERCENT)
@@ -285,6 +287,7 @@ def Right():
     wait(2, SECONDS)
     outDown.stop(COAST)
     outUp.stop(COAST)
+    """
 
 # --------------------
 # user control helpers
@@ -364,6 +367,17 @@ def inOutControl():
         storageMotor.stop(BRAKE)
         outMotor.stop(BRAKE)
 
+def loaderMechControl():
+    """Toggles loader piston using controller button B.
+    """
+    if controller_1.buttonB.pressing():
+        if loaderPiston.value() == 1:
+            loaderPiston.close()
+        else:
+            loaderPiston.open()
+    while controller_1.buttonB.pressing():
+        wait(1, MSEC)
+
 # --------------------
 # UI classes
 # --------------------
@@ -421,7 +435,7 @@ class autonSelector:
         self.names = names
         self.doc = doc
         self.background = background
-        self.selected = None
+        self.selected = lambda: None
 
     def display(self):
         """Show the selector UI and return the selected autonomous function.
@@ -433,7 +447,10 @@ class autonSelector:
 
         # create a vertical list of buttons from provided names
         for i in range(1, len(self.autons) + 1):
-            buttons.append(button(50, 220, 10, 10 + (i-1)*60, Color.GREEN, str(self.names[i-1])))
+            if i < 5:
+                buttons.append(button(50, 220, 10, 10 + (i-1)*60, Color.GREEN, str(self.names[i-1])))
+            else:
+                buttons.append(button(50, 220, 250, 10 + (i-5)*60, Color.GREEN, str(self.names[i-1])))
             buttons[i-1].draw()
         brain.screen.render()
 
@@ -452,9 +469,9 @@ class autonSelector:
                         cancel = button(60, 220, 250, 10, Color.RED, "Cancel")
                         confirm.draw()
                         cancel.draw()
+                        # print description text
                         brain.screen.set_pen_color(Color.WHITE)
                         brain.screen.set_cursor(5, 1)
-                        #brain.screen.print_at(self.doc[i], x = 10, y = 80, opaque = False,sep='\n')
                         for txt in self.doc[i].split('\n'):
                             brain.screen.print(txt, opaque = False, sep='\n')
                             brain.screen.new_line()
@@ -500,9 +517,10 @@ def user_control():
     while True:
         arcadeDriveGraph(left, right, controller_1, torqueOn=controller_1.buttonX.pressing())
         inOutControl()
+        loaderMechControl()
         wait(20, MSEC)
 
-# show selector and create competition instance
+# show selector COMMENT OUT IF NOT USING AUTON
 selector.display()
 
 # create competition instance
