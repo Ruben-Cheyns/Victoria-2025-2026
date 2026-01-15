@@ -7,17 +7,9 @@ path = input("Enter the path to the CSV file: ").strip().strip('"').strip("'")
 
 if not os.path.isfile(path):
     print("File not found:", path)
-    print("Tip: do not include surrounding quotes; you can use forward slashes or escape backslashes.")
     sys.exit(1)
 
-# Try common separators if default fails
-for sep in [",", ";", "\t"]:
-    try:
-        df = pd.read_csv(path, sep=sep)
-        if df.shape[1] > 1:
-            break
-    except Exception:
-        df = None
+df = pd.read_csv(path)
 
 if df is None:
     print("Failed to read CSV. Try opening it in a text editor to check delimiter/encoding.")
@@ -26,37 +18,20 @@ if df is None:
 print("Loaded file:", path)
 print("Columns:", list(df.columns))
 print(df.head(5))
+# Plotting
+angleCols = ['desiredValue', 'angle']
+constantCols =['proportional', 'derivative', 'integral', 'output']
+xcol = 'time'
 
-# prefer common column sets used by your PID exports
-expected_y_sets = [
-    ['proportional', 'derivative', 'integral', 'output', 'desiredValue'],
-    ['proportional', 'derivative', 'integral', 'output'],
-    ['error', 'derivative', 'totalError', 'output'],
-    ['error', 'derivative', 'integral', 'output'],
-]
+print("Plotting x =", xcol, "y =", constantCols)
+fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 12), sharex=True)
+ax[0,0] = df.plot(x=xcol, y=angleCols, grid=True, figsize=(10,6))
+ax[1,0] = df.plot(x=xcol, y=constantCols, grid=True, figsize=(10,6))
 
-ycols = None
-for expected in expected_y_sets:
-    found = [c for c in expected if c in df.columns]
-    if found:
-        ycols = found
-        break
-
-# fallback: any numeric columns except the first (use first col as x)
-if ycols is None:
-    numeric_cols = df.select_dtypes(include='number').columns.tolist()
-    if len(numeric_cols) <= 1:
-        print("No suitable numeric columns found to plot. Available columns:", list(df.columns))
-        sys.exit(1)
-    xcol = numeric_cols[0]
-    ycols = numeric_cols[1:]
-else:
-    xcol = 'time' if 'time' in df.columns else df.columns[0]
-
-print("Plotting x =", xcol, "y =", ycols)
-ax = df.plot(x=xcol, y=ycols, grid=True, figsize=(10,6))
-ax.set_xlabel(xcol)
-ax.set_ylabel("value")
+ax[0,0].set_xlabel(xcol)
+ax[0,0].set_ylabel("angle")
+ax[1,0].set_xlabel(xcol)
+ax[1,0].set_ylabel("% motor speed")
 plt.legend()
 plt.tight_layout()
 plt.show()

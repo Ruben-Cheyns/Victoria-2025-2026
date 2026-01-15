@@ -46,7 +46,7 @@ storageMotor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
 outMotor = Motor(Ports.PORT16, True)
 
 loaderPiston = Pneumatics(brain.three_wire_port.a)
-
+descorePiston = Pneumatics(brain.three_wire_port.h)
 
 #-------------#
 # PID classes #
@@ -155,12 +155,13 @@ class turnPID(PID):
         self.brain = brain
         self.output:float = 0
 
-    def run (self, desiredValue: int, tollerance: float):
-        """Run turn PID and set motor velocities until target heading reached."""
+    def run (self, desiredValue: int, tollerance: float, settleTime: int = 500):
+        """Run turn PID and set motor velocities until target heading stabilised."""
         previousError = 0
         totalError = 0
         i = 0
-        while abs(desiredValue - self.yourSensor()) > tollerance:
+        errorList = [desiredValue - self.yourSensor()]
+        while abs(max(errorList, key=abs)) > tollerance:
             i += 1
             error:float = desiredValue - self.yourSensor() if desiredValue - self.yourSensor() <= 180 else desiredValue - self.yourSensor() - 180
             derivative = (error - previousError) / (i*50)
@@ -171,43 +172,69 @@ class turnPID(PID):
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
             previousError = error
+            errorList.append(error)
+            if len(errorList) > settleTime/50:
+                errorList.pop(0)
 
-    def tune(self, desiredValue: int, tollerance: float, sd_file_name = "pidData.csv", stopButton = False):
+    def tune(self, desiredValue: int, tollerance: float, settleTime: float = 0.5, sd_file_name = "pidData.csv", stopButton = False):
         """Run tuning loop similar to PID.tune but saves a CSV containing PID data.
 
         CSV columns:
-            time, proportional, derivative, integral, output, desiredValue
+            time, proportional, derivative, integral, output
         """
         if stopButton:
             stop = button(60, 220, 250, 10, Color.RED, "terminate")
             stop.draw()
             brain.screen.render()
 
-        csvHeaderText:str = "time, proportional, derivative, integral, output, desiredValue"
+        csvHeaderText:str = "time, proportional, derivative, integral, output, desiredValue, angle"
         data_buffer:str = csvHeaderText + "\n"
 
-        previousError = 0
-        totalError = 0
+        totalError:float = 0.0
         i = 0
-
-        while abs(desiredValue - self.yourSensor()) > tollerance:
+        if desiredValue - self.yourSensor() > 0:
+            if desiredValue - self.yourSensor() <= 180:
+                error:float = desiredValue - self.yourSensor()
+            elif desiredValue - self.yourSensor() > 180:
+                error:float = desiredValue - self.yourSensor() - 360
+        else:
+            if desiredValue - self.yourSensor() >= -180:
+                error:float = desiredValue - self.yourSensor()
+            elif desiredValue - self.yourSensor() < -180:
+                error:float = 360 + (desiredValue - self.yourSensor())
+        errorList = [error]
+        previousError:float = error
+        while abs(max(errorList, key=abs)) > tollerance:
             i += 1
-            error:float = desiredValue - self.yourSensor() if desiredValue - self.yourSensor() <= 180 else desiredValue - self.yourSensor() - 180
-            derivative = (error - previousError) / (i*50)
+            if desiredValue - self.yourSensor() > 0:
+                if desiredValue - self.yourSensor() <= 180:
+                    error:float = desiredValue - self.yourSensor()
+                elif desiredValue - self.yourSensor() > 180:
+                    error:float = desiredValue - self.yourSensor() - 360
+            else:
+                if desiredValue - self.yourSensor() >= -180:
+                    error:float = desiredValue - self.yourSensor()
+                elif desiredValue - self.yourSensor() < -180:
+                    error:float = 360 + (desiredValue - self.yourSensor())
+            derivative = (error - previousError) / 0.050
             totalError += error
-            self.output = error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI
+            self.output = error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
             previousError = error
+            errorList.append(error)
+            if len(errorList) > settleTime/0.050:
+                errorList.pop(0)
 
             # save one row of data
-            data_buffer += str(i * 50) + ","
+            data_buffer += str(i * 0.050) + ","
             data_buffer += "%.3f" % (error*self.KP) + ","
             data_buffer += "%.3f" % (derivative * self.KD)  + ","
-            data_buffer += "%.3f" % (totalError * (i*50)*self.KI) + ","
+            data_buffer += "%.3f" % (totalError * 0.050 * self.KI) + ","
             data_buffer += "%.3f" % self.output + ","
-            data_buffer += str(desiredValue) + "\n"
+            data_buffer += str(desiredValue) + ","
+            data_buffer += "%.3f" % self.yourSensor() + "\n"
 
             if stopButton and stop.isPressed(self.brain.screen.x_position(),self.brain.screen.y_position()):
                 break
@@ -218,11 +245,11 @@ class turnPID(PID):
 # --------------------
 # PID setup
 # --------------------
-# create a turnPID instance for drivetrain rotation tuning
+# create a turnPID instance for drivetrain rotation
 rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right,
-                     KP = 0.2,
-                     KI = 0.00000007,
-                     KD = 0.02
+                     KP = 0.42,
+                     KI = 0.0,
+                     KD = 0.0
                      )
 
 
@@ -246,48 +273,38 @@ def tune():
     for i in range(30, 360, 30):
         right.spin(FORWARD, 0)
         left.spin(FORWARD, 0)
-        rotatePID.tune(i, 2, 'turnPID'+ str(i) + '.csv', stopButton=True)
+        rotatePID.tune(i, 2,sd_file_name='turnPID'+ str(i) + '.csv', stopButton=True)
         right.stop(HOLD)
         left.stop(HOLD)
         wait(2, SECONDS)
+        right.spin(FORWARD, 0)
+        left.spin(FORWARD, 0)
+        rotatePID.tune(0, 2,sd_file_name='turnPID'+ str(-i) + '.csv', stopButton=True)
+        wait(2, SECONDS)
+        right.stop(HOLD)
+        left.stop(HOLD)
+    
 
 def Left():
-    """temporary autonomous routine for scrimage 1
-    
-    forward(800)
-    right.spin(FORWARD, 0, PERCENT)
-    left.spin(FORWARD, 0, PERCENT)
-    rotatePID.run(265, 2)
-    right.spin(REVERSE,20,PERCENT)
-    left.spin(REVERSE,20,PERCENT)
-    wait(1000,MSEC)
-    right.stop(HOLD)
-    left.stop(HOLD)
-    outDown.spin(FORWARD, 100, PERCENT)
-    outUp.spin(REVERSE, 100, PERCENT)
-    wait(2, SECONDS)
-    outDown.stop(COAST)
-    outUp.stop(COAST)
-    """
+    forward(200, 40)
+    rotatePID.tune(315, 2)
+    intakeMotor.spin(FORWARD, 60, PERCENT)
+    storageMotor.spin(FORWARD, 100, PERCENT)
+    forward(400, 40)
+    intakeMotor.stop(BRAKE)
+    storageMotor.stop(BRAKE)
+    rotatePID.run(225, 2)
+    forward(-350, 40)
+    storageMotor.spin(REVERSE, 80, PERCENT)
+    intakeMotor.spin(FORWARD, 60, PERCENT)
+    outMotor.spin(FORWARD, 80, PERCENT)
+    wait(5, SECONDS)
+    forward(1200, 40)
+    rotatePID.run(180, 2)
+    forward(-500, 40)
 
 def Right():
-    """temporary autonomous routine for scrimage 1
-    
-    forward(800)
-    right.spin(FORWARD, 0, PERCENT)
-    left.spin(FORWARD, 0, PERCENT)
-    rotatePID.run(95, 2)
-    right.spin(REVERSE,20,PERCENT)
-    left.spin(REVERSE,20,PERCENT)
-    wait(1000,MSEC)
-    right.stop(HOLD)
-    left.stop(HOLD)
-    outDown.spin(FORWARD, 100, PERCENT)
-    outUp.spin(REVERSE, 100, PERCENT)
-    wait(2, SECONDS)
-    outDown.stop(COAST)
-    outUp.stop(COAST)
-    """
+    pass
 
 # --------------------
 # user control helpers
@@ -347,21 +364,21 @@ def inOutControl():
     - none: brake both motors
     """
     if controller_1.buttonL1.pressing():
-        intakeMotor.spin(FORWARD, 100, PERCENT)
+        intakeMotor.spin(FORWARD, 60, PERCENT)
         storageMotor.spin(FORWARD, 100, PERCENT)
         outMotor.stop(BRAKE)
     elif controller_1.buttonL2.pressing():
-        intakeMotor.spin(REVERSE, 100, PERCENT)
-        storageMotor.spin(REVERSE, 100, PERCENT)
+        intakeMotor.spin(REVERSE, 60, PERCENT)
+        storageMotor.spin(REVERSE, 80, PERCENT)
         outMotor.stop(BRAKE)
     elif controller_1.buttonR1.pressing():
-        intakeMotor.spin(FORWARD, 100, PERCENT)
-        storageMotor.spin(REVERSE, 100, PERCENT)
-        outMotor.spin(FORWARD, 100, PERCENT)
+        intakeMotor.spin(FORWARD, 60, PERCENT)
+        storageMotor.spin(REVERSE, 80, PERCENT)
+        outMotor.spin(FORWARD, 80, PERCENT)
     elif controller_1.buttonR2.pressing():
-        intakeMotor.spin(FORWARD, 100, PERCENT)
-        storageMotor.spin(REVERSE, 100, PERCENT)
-        outMotor.spin(REVERSE, 60, PERCENT)
+        intakeMotor.spin(FORWARD, 60, PERCENT)
+        storageMotor.spin(REVERSE, 80, PERCENT)
+        outMotor.spin(REVERSE, 80, PERCENT)
     else:
         intakeMotor.stop(BRAKE)
         storageMotor.stop(BRAKE)
@@ -376,6 +393,17 @@ def loaderMechControl():
         else:
             loaderPiston.open()
     while controller_1.buttonB.pressing():
+        wait(1, MSEC)
+
+def descoreMechControl():
+    """Toggles descore piston using controller button Down.
+    """
+    if controller_1.buttonDown.pressing():
+        if descorePiston.value() == 1:
+            descorePiston.close()
+        else:
+            descorePiston.open()
+    while controller_1.buttonDown.pressing():
         wait(1, MSEC)
 
 # --------------------
@@ -505,9 +533,9 @@ class autonSelector:
 # UI setup and competition
 # --------------------
 selector = autonSelector(
-    [Left, Right, tune],
-    ["Left", "Right","Tune"],
-    ["placement:\n  paralel with wall\n  contacting Left side of park zone\n  with right back", "placement:\n  paralel with wall\n  contacting Right side of park zone\n  with right back",""],
+    [Left, Right, tune, lambda: None, lambda: None, lambda: None, lambda: None, lambda: None],
+    ["Left", "Right", "Tune", "empty", "empty", "empty", "empty", "empty"],
+    ["placement:\n  paralel with wall\n  contacting Left side of park zone\n  with right back", "placement:\n  paralel with wall\n  contacting Right side of park zone\n  with right back","", "", "", "", "", ""],
     "background.png"
     )
 
@@ -518,6 +546,7 @@ def user_control():
         arcadeDriveGraph(left, right, controller_1, torqueOn=controller_1.buttonX.pressing())
         inOutControl()
         loaderMechControl()
+        descoreMechControl()
         wait(20, MSEC)
 
 # show selector COMMENT OUT IF NOT USING AUTON
