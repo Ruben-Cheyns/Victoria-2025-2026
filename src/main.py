@@ -189,6 +189,8 @@ class turnPID(PID):
 
         csvHeaderText:str = "time, proportional, derivative, integral, output, desiredValue, angle"
         data_buffer:str = csvHeaderText + "\n"
+        self.right.spin(FORWARD, 0)
+        self.left.spin(FORWARD, 0)
 
         totalError:float = 0.0
         i = 0
@@ -218,7 +220,7 @@ class turnPID(PID):
                     error:float = 360 + (desiredValue - self.yourSensor())
             derivative = (error - previousError) / 0.050
             totalError += error
-            self.output = error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI
+            self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (20 if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -20), key=abs)
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
@@ -248,8 +250,8 @@ class turnPID(PID):
 # create a turnPID instance for drivetrain rotation
 rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right,
                      KP = 0.42,
-                     KI = 0.0,
-                     KD = 0.0
+                     KI = 0.01,
+                     KD = 0.07
                      )
 
 
@@ -286,22 +288,22 @@ def tune():
     
 
 def Left():
-    forward(200, 40)
-    rotatePID.tune(315, 2)
+    forward(300, 10)
+    rotatePID.tune(45, 2, stopButton=True)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     storageMotor.spin(FORWARD, 100, PERCENT)
-    forward(400, 40)
+    forward(400, 10)
     intakeMotor.stop(BRAKE)
     storageMotor.stop(BRAKE)
-    rotatePID.run(225, 2)
-    forward(-350, 40)
+    rotatePID.tune(135, 2)
+    forward(-350, 10)
     storageMotor.spin(REVERSE, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
     wait(5, SECONDS)
-    forward(1200, 40)
-    rotatePID.run(180, 2)
-    forward(-500, 40)
+    forward(1200, 10)
+    rotatePID.tune(180, 2)
+    forward(-500, 10)
 
 def Right():
     pass
