@@ -317,13 +317,13 @@ def tune():
 
 def Left():
     forward(300, 10)
-    rotatePID.run(45, 2, stopButton=True)
+    rotatePID.run(315, 2)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     storageMotor.spin(FORWARD, 100, PERCENT)
-    forward(400, 10)
+    forward(200, 10)
     intakeMotor.stop(BRAKE)
     storageMotor.stop(BRAKE)
-    rotatePID.run(135, 2)
+    rotatePID.run(225, 2)
     forward(-350, 10)
     storageMotor.spin(REVERSE, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
