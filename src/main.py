@@ -155,25 +155,50 @@ class turnPID(PID):
         self.brain = brain
         self.output:float = 0
 
-    def run (self, desiredValue: int, tollerance: float, settleTime: int = 500):
+    def run (self, desiredValue: int, tollerance: float, settleTime: float = 0.5):
         """Run turn PID and set motor velocities until target heading stabilised."""
-        previousError = 0
-        totalError = 0
+
+        self.right.spin(FORWARD, 0)
+        self.left.spin(FORWARD, 0)
+
+        totalError:float = 0.0
         i = 0
-        errorList = [desiredValue - self.yourSensor()]
+        if desiredValue - self.yourSensor() > 0:
+            if desiredValue - self.yourSensor() <= 180:
+                error:float = desiredValue - self.yourSensor()
+            elif desiredValue - self.yourSensor() > 180:
+                error:float = desiredValue - self.yourSensor() - 360
+        else:
+            if desiredValue - self.yourSensor() >= -180:
+                error:float = desiredValue - self.yourSensor()
+            elif desiredValue - self.yourSensor() < -180:
+                error:float = 360 + (desiredValue - self.yourSensor())
+
+        errorList = [error]
+        previousError:float = error
+
         while abs(max(errorList, key=abs)) > tollerance:
             i += 1
-            error:float = desiredValue - self.yourSensor() if desiredValue - self.yourSensor() <= 180 else desiredValue - self.yourSensor() - 180
-            derivative = (error - previousError) / (i*50)
+            if desiredValue - self.yourSensor() > 0:
+                if desiredValue - self.yourSensor() <= 180:
+                    error:float = desiredValue - self.yourSensor()
+                elif desiredValue - self.yourSensor() > 180:
+                    error:float = desiredValue - self.yourSensor() - 360
+            else:
+                if desiredValue - self.yourSensor() >= -180:
+                    error:float = desiredValue - self.yourSensor()
+                elif desiredValue - self.yourSensor() < -180:
+                    error:float = 360 + (desiredValue - self.yourSensor())
+
+            derivative = (error - previousError) / 0.050
             totalError += error
-            self.output = error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI
-            # set velocities such that robot rotates in place
+            self.output = min(error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI, (20 if error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI > 0 else -20), key=abs)
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
             previousError = error
             errorList.append(error)
-            if len(errorList) > settleTime/50:
+            if len(errorList) > settleTime/0.050:
                 errorList.pop(0)
 
     def tune(self, desiredValue: int, tollerance: float, settleTime: float = 0.5, sd_file_name = "pidData.csv", stopButton = False):
@@ -204,8 +229,10 @@ class turnPID(PID):
                 error:float = desiredValue - self.yourSensor()
             elif desiredValue - self.yourSensor() < -180:
                 error:float = 360 + (desiredValue - self.yourSensor())
+
         errorList = [error]
         previousError:float = error
+
         while abs(max(errorList, key=abs)) > tollerance:
             i += 1
             if desiredValue - self.yourSensor() > 0:
@@ -218,6 +245,7 @@ class turnPID(PID):
                     error:float = desiredValue - self.yourSensor()
                 elif desiredValue - self.yourSensor() < -180:
                     error:float = 360 + (desiredValue - self.yourSensor())
+
             derivative = (error - previousError) / 0.050
             totalError += error
             self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (20 if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -20), key=abs)
@@ -289,20 +317,20 @@ def tune():
 
 def Left():
     forward(300, 10)
-    rotatePID.tune(45, 2, stopButton=True)
+    rotatePID.run(45, 2, stopButton=True)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     storageMotor.spin(FORWARD, 100, PERCENT)
     forward(400, 10)
     intakeMotor.stop(BRAKE)
     storageMotor.stop(BRAKE)
-    rotatePID.tune(135, 2)
+    rotatePID.run(135, 2)
     forward(-350, 10)
     storageMotor.spin(REVERSE, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
     wait(5, SECONDS)
     forward(1200, 10)
-    rotatePID.tune(180, 2)
+    rotatePID.run(180, 2)
     forward(-500, 10)
 
 def Right():
