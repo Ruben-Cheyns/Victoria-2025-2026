@@ -41,8 +41,8 @@ right_2 = Motor(Ports.PORT9, GearSetting.RATIO_6_1, True)
 right_3 = Motor(Ports.PORT8, GearSetting.RATIO_6_1, False)
 right = MotorGroup(right_1, right_2, right_3)
 
-intakeMotor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
-storageMotor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, False)
+intakeMotor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, True)
+storageMotor = Motor(Ports.PORT11, GearSetting.RATIO_18_1, True)
 outMotor = Motor(Ports.PORT16, True)
 
 loaderPiston = Pneumatics(brain.three_wire_port.a)
@@ -278,7 +278,7 @@ class turnPID(PID):
 # create a turnPID instance for drivetrain rotation
 rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right,
                      KP = 0.42,
-                     KI = 0.01,
+                     KI = 0.02,
                      KD = 0.07
                      )
 
@@ -316,21 +316,19 @@ def tune():
     
 
 def Left():
+    intakeMotor.spin(FORWARD, 80, PERCENT)
+    storageMotor.spin(REVERSE, 100, PERCENT)
+    forward(320, 10)
+    rotatePID.tune(340, 2)
     forward(300, 10)
-    rotatePID.run(315, 2)
-    intakeMotor.spin(FORWARD, 60, PERCENT)
-    storageMotor.spin(FORWARD, 100, PERCENT)
-    forward(200, 10)
-    intakeMotor.stop(BRAKE)
-    storageMotor.stop(BRAKE)
-    rotatePID.run(225, 2)
-    forward(-350, 10)
-    storageMotor.spin(REVERSE, 80, PERCENT)
+    rotatePID.tune(225, 2)
+    forward(-400, 10)
+    storageMotor.spin(FORWARD, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
-    wait(5, SECONDS)
+    wait(2.5, SECONDS)
     forward(1200, 10)
-    rotatePID.run(180, 2)
+    rotatePID.tune(180, 2)
     forward(-500, 10)
 
 def Right():
@@ -396,19 +394,19 @@ def inOutControl():
     if controller_1.buttonL1.pressing():
         intakeMotor.spin(FORWARD, 60, PERCENT)
         storageMotor.spin(FORWARD, 100, PERCENT)
-        outMotor.stop(BRAKE)
+        outMotor.spin(REVERSE, 80, PERCENT) 
     elif controller_1.buttonL2.pressing():
-        intakeMotor.spin(REVERSE, 60, PERCENT)
-        storageMotor.spin(REVERSE, 80, PERCENT)
-        outMotor.stop(BRAKE)
+        intakeMotor.spin(FORWARD, 60, PERCENT)
+        storageMotor.spin(FORWARD, 80, PERCENT)
+        outMotor.spin(FORWARD, 80, PERCENT)
     elif controller_1.buttonR1.pressing():
         intakeMotor.spin(FORWARD, 60, PERCENT)
         storageMotor.spin(REVERSE, 80, PERCENT)
-        outMotor.spin(FORWARD, 80, PERCENT)
+        outMotor.stop(BRAKE)
     elif controller_1.buttonR2.pressing():
-        intakeMotor.spin(FORWARD, 60, PERCENT)
-        storageMotor.spin(REVERSE, 80, PERCENT)
-        outMotor.spin(REVERSE, 80, PERCENT)
+        intakeMotor.spin(REVERSE, 60, PERCENT)
+        storageMotor.spin(FORWARD, 80, PERCENT)
+        outMotor.stop(BRAKE)
     else:
         intakeMotor.stop(BRAKE)
         storageMotor.stop(BRAKE)
