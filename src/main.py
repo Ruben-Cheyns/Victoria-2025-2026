@@ -145,7 +145,7 @@ class turnPID(PID):
         stopButton: enable touchscreen terminate button during tune()
     """
 
-    def __init__(self, yourSensor, brain: Brain, leftMotorGroup: MotorGroup, rightMotorGroup: MotorGroup, KP: float = 1, KI: float = 0, KD: float = 0):
+    def __init__(self, yourSensor, brain: Brain, leftMotorGroup: MotorGroup, rightMotorGroup: MotorGroup, speedCap: int = 100, KP: float = 1, KI: float = 0, KD: float = 0):
         self.KP = KP
         self.KI = KI
         self.KD = KD
@@ -154,6 +154,7 @@ class turnPID(PID):
         self.yourSensor = yourSensor
         self.brain = brain
         self.output:float = 0
+        self.speedCap:int = speedCap
 
     def run (self, desiredValue: int, tollerance: float, settleTime: float = 0.5):
         """Run turn PID and set motor velocities until target heading stabilised."""
@@ -192,7 +193,7 @@ class turnPID(PID):
 
             derivative = (error - previousError) / 0.050
             totalError += error
-            self.output = min(error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI, (20 if error * self.KP + derivative * self.KD + (totalError * (i*50)) * self.KI > 0 else -20), key=abs)
+            self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (self.speedCap if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -self.speedCap), key=abs)
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
@@ -248,7 +249,7 @@ class turnPID(PID):
 
             derivative = (error - previousError) / 0.050
             totalError += error
-            self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (20 if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -20), key=abs)
+            self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (self.speedCap if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -self.speedCap), key=abs)
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
             wait(50)
@@ -276,7 +277,7 @@ class turnPID(PID):
 # PID setup
 # --------------------
 # create a turnPID instance for drivetrain rotation
-rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right,
+rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap=20,
                      KP = 0.42,
                      KI = 0.02,
                      KD = 0.07
@@ -332,7 +333,18 @@ def Left():
     forward(-500, 10)
 
 def Right():
-    pass
+    intakeMotor.spin(FORWARD, 80, PERCENT)
+    storageMotor.spin(REVERSE, 100, PERCENT)
+    forward(320, 10)
+    rotatePID.tune(45, 2)
+    forward(300, 10)
+    rotatePID.tune(135, 2)
+    forward(850, 10)
+    rotatePID.tune(180, 2)
+    forward(-1000, 10)
+    storageMotor.spin(FORWARD, 80, PERCENT)
+    intakeMotor.spin(FORWARD, 60, PERCENT)
+    outMotor.spin(FORWARD, 80, PERCENT)
 
 # --------------------
 # user control helpers
@@ -359,9 +371,9 @@ def driveGraph(x, k):
     Positive and negative inputs are handled symmetrically.
     """
     if x > 0:
-        return (x**k)/10**((k-1)*2)
+        return 3/4*((x**k)/10**((k-1)*2))
     else:
-        return -(x**k)/10**((k-1)*2)
+        return -3/4*((x**k)/10**((k-1)*2))
 
 
 def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller, torqueOn: bool = False):
@@ -563,7 +575,7 @@ class autonSelector:
 selector = autonSelector(
     [Left, Right, tune, lambda: None, lambda: None, lambda: None, lambda: None, lambda: None],
     ["Left", "Right", "Tune", "empty", "empty", "empty", "empty", "empty"],
-    ["placement:\n  paralel with wall\n  contacting Left side of park zone\n  with right back", "placement:\n  paralel with wall\n  contacting Right side of park zone\n  with right back","", "", "", "", "", ""],
+    ["LEFT\n placement:\n  paralel with wall\n  contacting start of Left park zone corner\n  with right back", "RIGHT\n placement:\n  paralel with wall\n  contacting start of Right park zone corner\n  with left back","", "", "", "", "", ""],
     "background.png"
     )
 
@@ -571,7 +583,7 @@ def user_control():
     brain.screen.clear_screen()
     brain.screen.print("user control code")
     while True:
-        arcadeDriveGraph(left, right, controller_1, torqueOn=controller_1.buttonX.pressing())
+        arcadeDriveGraph(left, right, controller_1)
         inOutControl()
         loaderMechControl()
         descoreMechControl()
