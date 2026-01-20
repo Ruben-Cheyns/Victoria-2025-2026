@@ -47,6 +47,7 @@ outMotor = Motor(Ports.PORT16, True)
 
 loaderPiston = Pneumatics(brain.three_wire_port.a)
 descorePiston = Pneumatics(brain.three_wire_port.h)
+outPiston = Pneumatics(brain.three_wire_port.b)
 
 #-------------#
 # PID classes #
@@ -317,6 +318,7 @@ def tune():
     
 
 def Left():
+    outPiston.open()
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(320, 10)
@@ -333,6 +335,7 @@ def Left():
     forward(-500, 10)
 
 def Right():
+    outPiston.open()
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(320, 10)
@@ -582,6 +585,7 @@ selector = autonSelector(
 def user_control():
     brain.screen.clear_screen()
     brain.screen.print("user control code")
+    outPiston.open()
     while True:
         arcadeDriveGraph(left, right, controller_1)
         inOutControl()
