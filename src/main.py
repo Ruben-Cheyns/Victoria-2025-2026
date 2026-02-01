@@ -60,7 +60,7 @@ class PID:
         brain: Brain instance (used for SD card, screen, etc.)
         KP, KI, KD: PID constants
         output: last computed output value
-        stopButton: if True, tune() will show an on-screen stop button
+        stopButton: if True, graph() will show an on-screen stop button
     """
 
     def __init__(self, yourSensor, brain: Brain, KP: float = 1, KI: float = 0, KD: float = 0):
@@ -89,7 +89,7 @@ class PID:
             wait(50)
             previousError = error
 
-    def tune(self, desiredValue: int, tollerance: float, sd_file_name = "pidData.csv", stopButton = False):
+    def graph(self, desiredValue: int, tollerance: float, sd_file_name = "pidData.csv", stopButton = False):
         """Run PID loop and save tuning data to SD card.
 
         Produces CSV with columns:
@@ -143,7 +143,7 @@ class turnPID(PID):
         brain: Brain instance
         leftMotorGroup, rightMotorGroup: MotorGroup instances to apply rotation
         KP, KI, KD: PID gains
-        stopButton: enable touchscreen terminate button during tune()
+        stopButton: enable touchscreen terminate button during graph()
     """
 
     def __init__(self, yourSensor, brain: Brain, leftMotorGroup: MotorGroup, rightMotorGroup: MotorGroup, speedCap: int = 100, KP: float = 1, KI: float = 0, KD: float = 0):
@@ -203,8 +203,8 @@ class turnPID(PID):
             if len(errorList) > settleTime/0.050:
                 errorList.pop(0)
 
-    def tune(self, desiredValue: int, tollerance: float, settleTime: float = 0.5, sd_file_name = "pidData.csv", stopButton = False):
-        """Run tuning loop similar to PID.tune but saves a CSV containing PID data.
+    def graph(self, desiredValue: int, tollerance: float, settleTime: float = 0.5, sd_file_name = "pidData.csv", stopButton = False):
+        """Run tuning loop similar to PID.run but saves a CSV containing PID data.
 
         CSV columns:
             time, proportional, derivative, integral, output
@@ -278,10 +278,10 @@ class turnPID(PID):
 # PID setup
 # --------------------
 # create a turnPID instance for drivetrain rotation
-rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap=20,
-                     KP = 0.42,
-                     KI = 0.02,
-                     KD = 0.07
+rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap= 25,
+                     KP = 0.3,
+                     KI = 0.25,
+                     KD = 0.09
                      )
 
 
@@ -296,22 +296,27 @@ def forward(mm: int, speed: int= 20):
     right.spin_for(FORWARD, deg, wait= False)
     left.spin_for(FORWARD, deg, wait= True)
 
+def secForward(sec, speed):
+    right.__spin_for_time(FORWARD,sec,SECONDS,speed,PERCENT)
+    right.__spin_for_time(FORWARD,sec,SECONDS,speed,PERCENT)
+
+
 # --------------------
 # autonomous routines
 # --------------------
-def tune():
-    """Autonomous routine to tune turn PID for various angles.
+def graph():
+    """Autonomous routine to graph turn PID for various angles.
     """
     for i in range(30, 360, 30):
         right.spin(FORWARD, 0)
         left.spin(FORWARD, 0)
-        rotatePID.tune(i, 2,sd_file_name='turnPID'+ str(i) + '.csv', stopButton=True)
+        rotatePID.graph(i, 2,sd_file_name='turnPID'+ str(i) + '.csv', stopButton=True)
         right.stop(HOLD)
         left.stop(HOLD)
         wait(2, SECONDS)
         right.spin(FORWARD, 0)
         left.spin(FORWARD, 0)
-        rotatePID.tune(0, 2,sd_file_name='turnPID'+ str(-i) + '.csv', stopButton=True)
+        rotatePID.graph(0, 2,sd_file_name='turnPID'+ str(-i) + '.csv', stopButton=True)
         wait(2, SECONDS)
         right.stop(HOLD)
         left.stop(HOLD)
@@ -322,16 +327,16 @@ def Left():
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(320, 10)
-    rotatePID.tune(340, 2)
+    rotatePID.graph(340, 2)
     forward(300, 10)
-    rotatePID.tune(225, 2)
+    rotatePID.graph(225, 2)
     forward(-400, 10)
     storageMotor.spin(FORWARD, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
     wait(2.5, SECONDS)
     forward(1200, 10)
-    rotatePID.tune(180, 2)
+    rotatePID.graph(180, 2)
     forward(-500, 10)
 
 def Right():
@@ -339,11 +344,11 @@ def Right():
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(320, 10)
-    rotatePID.tune(45, 2)
+    rotatePID.graph(45, 2)
     forward(300, 10)
-    rotatePID.tune(135, 2)
+    rotatePID.graph(135, 2)
     forward(850, 10)
-    rotatePID.tune(180, 2)
+    rotatePID.graph(180, 2)
     forward(-1000, 10)
     storageMotor.spin(FORWARD, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
@@ -447,6 +452,17 @@ def descoreMechControl():
         else:
             descorePiston.open()
     while controller_1.buttonDown.pressing():
+        wait(1, MSEC)
+
+def outPistonControl():
+    """Toggles out piston using controller button Right.
+    """
+    if controller_1.buttonRight.pressing():
+        if outPiston.value() == 1:
+            outPiston.close()
+        else:
+            outPiston.open()
+    while controller_1.buttonRight.pressing():
         wait(1, MSEC)
 
 # --------------------
@@ -576,9 +592,9 @@ class autonSelector:
 # UI setup and competition
 # --------------------
 selector = autonSelector(
-    [Left, Right, tune, lambda: None, lambda: None, lambda: None, lambda: None, lambda: None],
+    [Left, Right, graph, lambda: None, lambda: None, lambda: None, lambda: None, lambda: None],
     ["Left", "Right", "Tune", "empty", "empty", "empty", "empty", "empty"],
-    ["LEFT\n placement:\n  paralel with wall\n  contacting start of Left park zone corner\n  with right back", "RIGHT\n placement:\n  paralel with wall\n  contacting start of Right park zone corner\n  with left back","", "", "", "", "", ""],
+    ["LEFT\n placement:\n  paralel with wall\n  contacting start of Left park zone corner\n  with right back", "RIGHT\n placement:\n  paralel with wall\n  contacting start of Right park zone corner\n  with left back","graph loop", "", "", "", "", ""],
     "background.png"
     )
 
