@@ -451,7 +451,7 @@ def fullautonV2():
     # start
     outPiston.open()                                    # Extension outtake
     #start to preload in long goal
-    forward(-795, 15)                                   # drive backwards
+    forward(-780, 15)                                   # drive backwards
     rotatePID.graph(90, 2)                              # turn to -90°
     forward(-555, 25)                                   # drive backwards to long goal
     forward(-40, 5)
