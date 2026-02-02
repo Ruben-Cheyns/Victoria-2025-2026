@@ -586,15 +586,16 @@ def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller
     """Arcade drive: forward/back from left joystick axis3 (processed by driveGraph),
     turn from right joystick axis1. Sets motor velocities and starts spinning.
     this version includes quadratic drive graph for finer control at low speeds.
+    The turn speed is also divided by 2 for better control
     If torqueOn is True, limits max speed to 60% for more torque.
     """
     
     if torqueOn:
-        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2))*6/10, PERCENT)
-        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2))*6/10, PERCENT)
+        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2)*6/10, PERCENT)
+        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2)*6/10, PERCENT)
     else:
-        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)), PERCENT)
-        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)), PERCENT)
+        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2), PERCENT)
+        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2), PERCENT)
     
 
     left.spin(FORWARD)
