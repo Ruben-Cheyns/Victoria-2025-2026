@@ -283,6 +283,9 @@ class turnPID(PID):
             totalError += error
             # sets output to the total PID equation or the speedCap
             self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (self.speedCap if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -self.speedCap), key=abs)
+            # sets totalError to zero if speedCap reached to prevent integral windup 
+            if abs(self.output) == self.speedCap:
+                totalError = 0
             # sets motor velocity to the PID output
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
@@ -316,10 +319,10 @@ class turnPID(PID):
 # PID setup
 # --------------------
 # create a turnPID instance for drivetrain rotation
-rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap= 25,
-                     KP = 0.42,
-                     KI = 0.02,
-                     KD = 0.07
+rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap= 20,
+                     KP = 0.33,
+                     KI = 0.13,
+                     KD = 0.065
                      )
 
 
