@@ -452,7 +452,7 @@ def fullautonV2():
     outPiston.open()                                    # Extension outtake
     #start to preload in long goal
     forward(-795, 15)                                   # drive backwards
-    rotatePID.graph(90, 2)                               # turn to -90°
+    rotatePID.graph(90, 2)                              # turn to -90°
     forward(-555, 25)                                   # drive backwards to long goal
     forward(-40, 5)
     stopdrivetrain(2)
@@ -474,15 +474,15 @@ def fullautonV2():
     wait(4, SECONDS)
     # go intake 2 extra blocks
     forward(180, 15)                                    # drive away from long goal
-    rotatePID.graph(0, 2)                                # turn to get to the side of long goal
+    rotatePID.graph(0, 2)                               # turn to get to the side of long goal
     forward(620, 15)
-    rotatePID.graph(-90, 2)                              # turn to the extra blocks
+    rotatePID.graph(-90, 2)                             # turn to the extra blocks
     intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(190, 15)
     Stopallmotors()
     # drive back to long goal
-    wait(0.2, SECONDS)
+    wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
     forward(-190, 15)
     rotatePID.graph(0, 2)
     forward(-620, 15)
@@ -491,15 +491,15 @@ def fullautonV2():
     forward(-40, 5)
     stopdrivetrain(2)
     # score the extra blocks
-    Longgoal()
+    Longgoal()                                          # spin outtake to long goal
     wait(2, SECONDS)
-    Stopallmotors()
+    Stopallmotors()                                     # stop outtake
     # drive to the long goal on the other side of the field
-    forward(180, 15)
+    forward(180, 15)                                    # drive away from long goal
     rotatePID.graph(0, 2)
-    forward(2500, 15)
+    forward(2500, 15)                                   # drive to other side of the field
     rotatePID.graph(90, 2)
-    forward(-180, 25)
+    forward(-180, 25)                                   # allign with the right long goal
     forward(-40, 5)
     stopdrivetrain(0)
     # go empty loader
@@ -520,15 +520,15 @@ def fullautonV2():
     wait(4, SECONDS)
     # go intake extra blocks
     forward(180, 15)                                    # drive away from long goal
-    rotatePID.graph(-180, 2)                             # turn to get to the side of long goal
+    rotatePID.graph(-180, 2)                            # turn to get to the side of long goal
     forward(620, 15)
-    rotatePID.graph(-90, 2)                              # turn to the extra blocks
+    rotatePID.graph(-90, 2)                             # turn to the extra blocks
     intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
     storageMotor.spin(REVERSE, 100, PERCENT)
     forward(250, 15)
     Stopallmotors()
     # drive back to long goal
-    wait(0.2, SECONDS)
+    wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
     forward(-190, 15)
     rotatePID.graph(0, 2)
     forward(-620, 15)
@@ -538,13 +538,13 @@ def fullautonV2():
     stopdrivetrain(2)
     # score extra blocks
     Longgoal()
-    wait(4, SECONDS)
+    wait(4, SECONDS)                                    # wait for blocks to be scored
     # go park
     forward(180, 15)
     rotatePID.graph(-180, 2)
-    forward(125, 15)
+    forward(125, 15)                                    # drive to park zone
     rotatePID.graph(90, 2)
-    forward(2000, 100)
+    forward(2000, 100)                                  # drive in park zone with increased speed
 
 
 def backupauton():
