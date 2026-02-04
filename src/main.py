@@ -320,9 +320,9 @@ class turnPID(PID):
 # --------------------
 # create a turnPID instance for drivetrain rotation
 rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=left, rightMotorGroup=right, speedCap= 20,
-                     KP = 0.33,
+                     KP = 0.34,
                      KI = 0.13,
-                     KD = 0.065
+                     KD = 0.014
                      )
 
 
@@ -347,7 +347,7 @@ def Stopallmotors():
     storageMotor.stop()
     outMotor.stop()
 
-def stopdrivetrain(sec):
+def stopdrivetrain(sec=0):
     wait(sec, SECONDS)
     left.stop
     right.stop
@@ -451,11 +451,11 @@ def fullautonV2():
     # start
     outPiston.open()                                    # Extension outtake
     #start to preload in long goal
-    forward(-780, 15)                                   # drive backwards
+    forward(-790, 15)                                   # drive backwards
     rotatePID.graph(90, 2)                              # turn to -90°
     forward(-555, 25)                                   # drive backwards to long goal
     forward(-40, 5)
-    stopdrivetrain(2)
+    stopdrivetrain(0.5)
     Longgoal()                                          # outake preload long goal
     wait(0.7, SECONDS)                                  # wait for preload to be scored
     Stopallmotors()
@@ -463,33 +463,36 @@ def fullautonV2():
     loaderPiston.open()                                 # open the loader mech
     intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
     storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(720, 20)                                    # drive forward to the loader
-    wait(1.5, SECONDS)                                  # wait for blocks to come out the loader
+    forward(725, 20)                                    # drive forward to the loader
+    wait(2.5, SECONDS)                                  # wait for blocks to come out the loader
     Stopallmotors()                                     # stop intake
     # score blocks loader 1
-    forward(-700, 25)                                   # drive backwards to long goal
+    forward(-720, 25)                                   # drive backwards to long goal
+    forward(-40, 5)
+    stopdrivetrain(0.5)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     storageMotor.spin(FORWARD, 30, PERCENT)             # slower so that the blocks come out 1 by 1
     outMotor.spin(FORWARD, -80, PERCENT)
-    wait(4, SECONDS)
+    wait(6, SECONDS)
     # go intake 2 extra blocks
-    forward(180, 15)                                    # drive away from long goal
+    loaderPiston.close()
+    forward(350, 15)                                    # drive away from long goal
     rotatePID.graph(0, 2)                               # turn to get to the side of long goal
-    forward(620, 15)
+    forward(600, 15)
     rotatePID.graph(-90, 2)                             # turn to the extra blocks
     intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
     storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(190, 15)
-    Stopallmotors()
+    forward(270, 15)
     # drive back to long goal
     wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
-    forward(-190, 15)
+    forward(-280, 15)
     rotatePID.graph(0, 2)
     forward(-620, 15)
+    Stopallmotors()
     rotatePID.graph(90, 2)
-    forward(180, 25)                                    # drive to long goal
+    forward(-350, 25)                                    # drive to long goal
     forward(-40, 5)
-    stopdrivetrain(2)
+    stopdrivetrain(0.5)
     # score the extra blocks
     Longgoal()                                          # spin outtake to long goal
     wait(2, SECONDS)
@@ -497,55 +500,10 @@ def fullautonV2():
     # drive to the long goal on the other side of the field
     forward(180, 15)                                    # drive away from long goal
     rotatePID.graph(0, 2)
-    forward(2500, 15)                                   # drive to other side of the field
+    forward(1250, 15)                                   # drive to other side of the field
     rotatePID.graph(90, 2)
-    forward(-180, 25)                                   # allign with the right long goal
-    forward(-40, 5)
-    stopdrivetrain(0)
-    # go empty loader
-    loaderPiston.open()                                 # open the loader mech
-    intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
-    storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(720, 20)                                    # drive forward to the loader
-    wait(1.5, SECONDS)                                  # wait for blocks to come out the loader
-    Stopallmotors()                                     # stop intake and outtake
-    # go score blocks in long goal
-    forward(-720, 25)
-    forward(-40, 5)
-    stopdrivetrain(0)
-    loaderPiston.close()
-    intakeMotor.spin(FORWARD, 60, PERCENT)
-    storageMotor.spin(FORWARD, 30, PERCENT)             # slower so that the blocks come out 1 by 1
-    outMotor.spin(FORWARD, -80, PERCENT)
-    wait(4, SECONDS)
-    # go intake extra blocks
-    forward(180, 15)                                    # drive away from long goal
-    rotatePID.graph(-180, 2)                            # turn to get to the side of long goal
-    forward(620, 15)
-    rotatePID.graph(-90, 2)                             # turn to the extra blocks
-    intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
-    storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(250, 15)
-    Stopallmotors()
-    # drive back to long goal
-    wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
-    forward(-190, 15)
-    rotatePID.graph(0, 2)
-    forward(-620, 15)
-    rotatePID.graph(90, 2)
-    forward(180, 25)                                    # drive to long goal
-    forward(-40, 5)
-    stopdrivetrain(2)
-    # score extra blocks
-    Longgoal()
-    wait(4, SECONDS)                                    # wait for blocks to be scored
-    # go park
-    forward(180, 15)
-    rotatePID.graph(-180, 2)
-    forward(125, 15)                                    # drive to park zone
-    rotatePID.graph(90, 2)
-    forward(2000, 100)                                  # drive in park zone with increased speed
-
+    forward(6000, 100)
+    
 
 def backupauton():
     intakeMotor.spin(FORWARD, 60, PERCENT)
@@ -796,8 +754,8 @@ def user_control():
         wait(20, MSEC)
 
 # show selector COMMENT OUT IF NOT USING AUTON
-selector.display()
+# selector.display()
 
 # create competition instance
-comp = Competition(user_control, selector.selected)
+comp = Competition(user_control, fullautonV2)
 
