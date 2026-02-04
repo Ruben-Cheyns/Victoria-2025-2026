@@ -569,7 +569,11 @@ def inOutControl():
     - R2:   score high
     - none: brake both motors
     """
-    if controller_1.buttonL1.pressing():
+    if controller_1.buttonLeft.pressing():
+        intakeMotor.spin(FORWARD, 60, PERCENT)
+        storageMotor.spin(FORWARD, 30, PERCENT)
+        outMotor.spin(REVERSE, 80, PERCENT) 
+    elif controller_1.buttonL1.pressing():
         intakeMotor.spin(FORWARD, 60, PERCENT)
         storageMotor.spin(FORWARD, 100, PERCENT)
         outMotor.spin(REVERSE, 80, PERCENT) 
