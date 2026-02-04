@@ -347,7 +347,7 @@ def Stopallmotors():
     storageMotor.stop()
     outMotor.stop()
 
-def stopdrivetrain(sec=0):
+def stopdrivetrain(sec=0.0):
     wait(sec, SECONDS)
     left.stop
     right.stop
@@ -371,8 +371,23 @@ def graph():
         wait(2, SECONDS)
         right.stop(HOLD)
         left.stop(HOLD)
-
 def Left():
+    gyro.set_heading(346)
+    outPiston.open()
+    intakeMotor.spin(FORWARD, 80, PERCENT)
+    storageMotor.spin(REVERSE, 100, PERCENT)
+    forward(625, 15)
+    rotatePID.graph(225, 2)
+    forward(-400, 15)
+    storageMotor.spin(FORWARD, 80, PERCENT)
+    intakeMotor.spin(FORWARD, 60, PERCENT)
+    outMotor.spin(FORWARD, 80, PERCENT)
+    wait(2.5, SECONDS)
+    forward(1200, 15)
+    rotatePID.graph(180, 2)
+    forward(-500, 15)
+
+def LeftOld():
     outPiston.open()
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
@@ -482,7 +497,7 @@ def fullautonV2():
     rotatePID.graph(-90, 2)                             # turn to the extra blocks
     intakeMotor.spin(FORWARD, 80, PERCENT)              # spin intake and storage inwards
     storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(270, 15)
+    forward(230, 15)
     # drive back to long goal
     wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
     forward(-280, 15)
@@ -639,7 +654,7 @@ class button:
 
     def isPressed(self, touchX:int, touchY:int) -> bool:
         """Return True if the provided touch coordinates are inside this button."""
-        if touchX > self.posX and touchX < self.posX + self.width and touchY > self.posY and touchY < self.posY + self.height:
+        if touchX > self.posX and touchX < self.posX + self.width and touchY > self.posY and touchY < self.posY + self.height and brain.screen.pressing():
             self.Pressed = True
         else:
             self.Pressed = False
