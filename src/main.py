@@ -654,7 +654,7 @@ class button:
 
     def isPressed(self, touchX:int, touchY:int) -> bool:
         """Return True if the provided touch coordinates are inside this button."""
-        if touchX > self.posX and touchX < self.posX + self.width and touchY > self.posY and touchY < self.posY + self.height and brain.screen.pressing():
+        if touchX > self.posX and touchX < self.posX + self.width and touchY > self.posY and touchY < self.posY + self.height:
             self.Pressed = True
         else:
             self.Pressed = False
