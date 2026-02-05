@@ -797,4 +797,4 @@ def user_control():
 selector.display()
 
 # create competition instance
-comp = Competition(user_control, selector.selected)
+comp = Competition(user_control, fullautonV2)
