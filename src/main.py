@@ -335,8 +335,8 @@ def forward(mm: int, speed: int= 20):
     right.set_velocity(speed, PERCENT)
     left.set_velocity(speed, PERCENT)
     right.spin_for(FORWARD, deg, wait= False)
-
     left.spin_for(FORWARD, deg, wait= True)
+
 def Longgoal():
     intakeMotor.spin(FORWARD, 60, PERCENT)
     storageMotor.spin(FORWARD, 80, PERCENT)
@@ -482,7 +482,7 @@ def fullautonV2():
     wait(2.5, SECONDS)                                  # wait for blocks to come out the loader
     Stopallmotors()                                     # stop intake
     # score blocks loader 1
-    forward(-720, 25)                                   # drive backwards to long goal
+    forward(-730, 25)                                   # drive backwards to long goal
     forward(-40, 5)
     stopdrivetrain(0.5)
     intakeMotor.spin(FORWARD, 60, PERCENT)
@@ -491,6 +491,7 @@ def fullautonV2():
     wait(6, SECONDS)
     # go intake 2 extra blocks
     loaderPiston.close()
+    Stopallmotors()
     forward(350, 15)                                    # drive away from long goal
     rotatePID.graph(0, 2)                               # turn to get to the side of long goal
     forward(600, 15)
@@ -502,7 +503,7 @@ def fullautonV2():
     wait(0.2, SECONDS)                                  # wait 0.2 seconds to keep balance
     forward(-280, 15)
     rotatePID.graph(0, 2)
-    forward(-620, 15)
+    forward(-610, 15)
     Stopallmotors()
     rotatePID.graph(90, 2)
     forward(-350, 25)                                    # drive to long goal
@@ -515,8 +516,8 @@ def fullautonV2():
     # drive to the long goal on the other side of the field
     forward(180, 15)                                    # drive away from long goal
     rotatePID.graph(0, 2)
-    forward(1250, 15)                                   # drive to other side of the field
-    rotatePID.graph(90, 2)
+    forward(1220, 15)                                   # drive to other side of the field
+    rotatePID.graph(90, 3)
     forward(6000, 100)
     
 
@@ -540,6 +541,15 @@ def driveGraph(x, k):
     else:
         return -3/4*((x**k)/10**((k-1)*2))
 
+buttonOn = True
+
+def buttonToggle():
+    global buttonOn
+    while controller_1.buttonY.pressing():
+        buttonOn = not buttonOn
+    controller_1.screen.clear_screen()
+    controller_1.screen.set_cursor(0,0)
+    controller_1.screen.print("30%"if buttonOn else "100%")
 
 def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller, torqueOn: bool = False):
     """Arcade drive: forward/back from left joystick axis3 (processed by driveGraph),
@@ -550,8 +560,8 @@ def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller
     """
     
     if torqueOn:
-        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2)*6/10, PERCENT)
-        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2)*6/10, PERCENT)
+        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2)*3/10, PERCENT)
+        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2)*3/10, PERCENT)
     else:
         right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2), PERCENT)
         left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2), PERCENT)
@@ -569,7 +579,7 @@ def inOutControl():
     - R2:   score high
     - none: brake both motors
     """
-    if controller_1.buttonLeft.pressing():
+    if controller_1.buttonRight.pressing():
         intakeMotor.spin(FORWARD, 60, PERCENT)
         storageMotor.spin(FORWARD, 30, PERCENT)
         outMotor.spin(REVERSE, 80, PERCENT) 
@@ -766,7 +776,8 @@ def user_control():
     brain.screen.print("user control code")
     outPiston.open()
     while True:
-        arcadeDriveGraph(left, right, controller_1)
+        buttonToggle()
+        arcadeDriveGraph(left, right, controller_1, buttonOn)
         inOutControl()
         loaderMechControl()
         descoreMechControl()
