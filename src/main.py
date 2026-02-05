@@ -314,7 +314,6 @@ class turnPID(PID):
         # saves the data buffer onto the SD card as a SCV
         self.brain.sdcard.savefile(sd_file_name, bytearray(data_buffer, 'utf-8'))
 
-
 # --------------------
 # PID setup
 # --------------------
@@ -324,7 +323,6 @@ rotatePID = turnPID(yourSensor= gyro.heading , brain = brain, leftMotorGroup=lef
                      KI = 0.13,
                      KD = 0.014
                      )
-
 
 # --------------------
 # autonomous helpers
@@ -371,6 +369,7 @@ def graph():
         wait(2, SECONDS)
         right.stop(HOLD)
         left.stop(HOLD)
+
 def Left():
     gyro.set_heading(346)
     outPiston.open()
@@ -519,7 +518,6 @@ def fullautonV2():
     forward(1220, 15)                                   # drive to other side of the field
     rotatePID.graph(90, 3)
     forward(6000, 100)
-    
 
 def backupauton():
     intakeMotor.spin(FORWARD, 60, PERCENT)
@@ -560,16 +558,14 @@ def arcadeDriveGraph(left: MotorGroup, right: MotorGroup, controller: Controller
     """
     
     if torqueOn:
-        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2)*3/10, PERCENT)
-        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2)*3/10, PERCENT)
+        right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2)*4.5/10, PERCENT)
+        left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2)*4.5/10, PERCENT)
     else:
         right.set_velocity((driveGraph(controller.axis3.position(),2) - driveGraph(controller.axis1.position(),2)/2), PERCENT)
         left.set_velocity((driveGraph(controller.axis3.position(),2) + driveGraph(controller.axis1.position(),2)/2), PERCENT)
-    
 
     left.spin(FORWARD)
     right.spin(FORWARD)
-
 
 def inOutControl():
     """Control intake motors using controller buttons:
@@ -674,7 +670,6 @@ class button:
             self.Pressed = False
         return self.Pressed
 
-
 class autonSelector:
     """Simple touchscreen autonomous routine selector.
 
@@ -759,7 +754,6 @@ class autonSelector:
                             wait(100)
             wait(100)
 
-
 # --------------------
 # UI setup and competition
 # --------------------
@@ -770,7 +764,6 @@ selector = autonSelector(
     "background.png"
     )
     
-
 def user_control():
     brain.screen.clear_screen()
     brain.screen.print("user control code")
@@ -788,4 +781,3 @@ def user_control():
 
 # create competition instance
 comp = Competition(user_control, fullautonV2)
-
