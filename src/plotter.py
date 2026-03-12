@@ -19,6 +19,16 @@ print("Loaded file:", path)
 print("Columns:", list(df.columns))
 print(df.head(5))
 
+def angleChange(x):
+    out = []
+    for i in x:
+        i = i-360 if i > 180 else i
+        out.append(i)
+    return out
+
+df2 = pd.DataFrame(df.apply(angleChange, axis=1,result_type="broadcast"))
+print(df2.head(5))
+
 # Plotting
 angleCols = [5, 6]
 constantCols = [1, 2, 3, 4]
@@ -26,8 +36,8 @@ xcol = 0
 
 print("Plotting x =", xcol, "y =", constantCols)
 fig, (ax1, ax2) = plt.subplots(2, sharex=True)
-ax1 = df.plot(x=xcol, y=angleCols, ax=ax1, grid=True)
-ax2 = df.plot(x=xcol, y=constantCols, ax=ax2, grid=True)
+ax1 = df2.plot(x=xcol, y=angleCols, ax=ax1, grid=True)
+ax2 = df2.plot(x=xcol, y=constantCols, ax=ax2, grid=True)
 
 ax1.set_xlabel("time (s)")
 ax1.set_ylabel("angle")

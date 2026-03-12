@@ -209,6 +209,9 @@ class turnPID(PID):
             totalError += error
             # sets output to the total PID equation or the speedCap
             self.output = min(error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI, (self.speedCap if error * self.KP + derivative * self.KD + (totalError * 0.050) * self.KI > 0 else -self.speedCap), key=abs)
+            # sets totalError to zero if speedCap reached to prevent integral windup 
+            if abs(self.output) == self.speedCap:
+                totalError = 0
             # sets motor velocity to the PID output
             self.left.set_velocity(self.output, PERCENT)
             self.right.set_velocity(-self.output, PERCENT)
@@ -390,33 +393,47 @@ def LeftOld():
     outPiston.open()
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(320, 10)
+    forward(270, 15)
     rotatePID.graph(340, 2)
-    forward(300, 10)
+    forward(360, 15)
     rotatePID.graph(225, 2)
-    forward(-400, 10)
+    forward(-400, 15)
     storageMotor.spin(FORWARD, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
     wait(2.5, SECONDS)
-    forward(1200, 10)
+    forward(1200, 15)
     rotatePID.graph(180, 2)
-    forward(-500, 10)
+    forward(-500, 15)
 
 def Right():
     outPiston.open()
     intakeMotor.spin(FORWARD, 80, PERCENT)
     storageMotor.spin(REVERSE, 100, PERCENT)
-    forward(320, 10)
+    forward(625, 15)
     rotatePID.graph(45, 2)
-    forward(300, 10)
+    forward(300, 15)
     rotatePID.graph(135, 2)
-    forward(850, 10)
+    forward(850, 15)
     rotatePID.graph(180, 2)
-    forward(-1000, 10)
+    forward(-1000, 15)
     storageMotor.spin(FORWARD, 80, PERCENT)
     intakeMotor.spin(FORWARD, 60, PERCENT)
     outMotor.spin(FORWARD, 80, PERCENT)
+
+def Mid():
+    gyro.set_heading(14)
+    outPiston.open()
+    intakeMotor.spin(FORWARD, 80, PERCENT)
+    storageMotor.spin(REVERSE, 100, PERCENT)
+    forward(625, 15)
+    rotatePID.graph(315,2)
+    forward(400, 2)
+    intakeMotor.spin(REVERSE, 80, PERCENT)
+    storageMotor.spin(FORWARD,100, PERCENT)
+    forward(1200, 15)
+    rotatePID.graph(180, 2)
+    forward(-500, 15)
 
 def FullautonV1():
     # start
@@ -539,7 +556,7 @@ def driveGraph(x, k):
     else:
         return -3/4*((x**k)/10**((k-1)*2))
 
-buttonOn = True
+buttonOn = False
 
 def buttonToggle():
     global buttonOn
@@ -758,9 +775,9 @@ class autonSelector:
 # UI setup and competition
 # --------------------
 selector = autonSelector(
-    [Left, Right, graph, FullautonV1, fullautonV2, backupauton, lambda: None, lambda: None],
-    ["Left", "Right", "graph", "Auto Skills V1", "Auto Skills V2", "Backup Auton", "empty", "empty"],
-    ["LEFT\n placement:\n  paralel with wall\n  contacting start of Left park zone corner\n  with right back", "RIGHT\n placement:\n  paralel with wall\n  contacting start of Right park zone corner\n  with left back","", "", "", "", "", ""],
+    [Left, Right, Mid, FullautonV1, fullautonV2, backupauton, LeftOld, lambda: None],
+    ["Left", "Right", "Mid", "Auto Skills V1", "Auto Skills V2", "Backup Auton", "LeftOld", "empty"],
+    ["LEFT\n placement:\n  14° angle\n  contacting start of Left park zone corner\n  with right back", "RIGHT\n placement:\n  parrelel with wall\n  contacting start of Right park zone corner\n  with left back","Mid\n placement:\n  14° angle\n  contacting start of Right park zone corner\n  with left back", "", "", "", "LeftOld\n placement:\n  paralel with wall\n  contacting start of Left park zone corner\n  with right back", ""],
     "background.png"
     )
     
@@ -777,7 +794,7 @@ def user_control():
         wait(20, MSEC)
 
 # show selector COMMENT OUT IF NOT USING AUTON
-# selector.display()
+selector.display()
 
 # create competition instance
-comp = Competition(user_control, fullautonV2)
+comp = Competition(user_control, selector.selected)
